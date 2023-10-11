@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 out_csv['train'].append(classes[i][index])
 
             for index in test_index:
-                out_csv['val'].append(str(classes[i][index]))
+                out_csv['val'].append(str(classes[i][index]).split('.')[0])
 
             while len(out_csv['train']) != len(out_csv['val']):
                 out_csv['val'].append(None)
