@@ -76,7 +76,6 @@ if __name__ == '__main__':
             for index in val_index:
                 out_csvs[j]['val'].append(str(classes[i][index]).split('.')[0])
 
-
     for i in range(folds):
         while len(out_csvs[i]['train']) != len(out_csvs[i]['val']):
             out_csvs[i]['val'].append(None)
