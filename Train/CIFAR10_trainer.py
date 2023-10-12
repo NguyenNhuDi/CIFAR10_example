@@ -78,7 +78,7 @@ def train_model(model, val_batches, train_batches):
     for epoch in range(epochs):
         start = time.time()
 
-        for i, data in tqdm(enumerate(train_batches)):
+        for data in tqdm(train_batches):
             image, label = data
             image, label = image.to(device), label.to(device)
 
