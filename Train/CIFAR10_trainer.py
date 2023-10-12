@@ -11,6 +11,11 @@ from torch.utils.data import DataLoader
 from torchvision import models
 import torch.nn as nn
 import time
+from tqdm import tqdm
+
+
+import warnings
+warnings.filterwarnings("ignore")
 
 """
 Change your paths here
@@ -29,15 +34,15 @@ learning_rate = 0.1
 weight_decay = 0.75
 
 
-def evaluate(val_batches, epoch, model):
+def evaluate(val_batches, model):
     model.eval()
 
     total_correct = 0
     total_loss = 0
     total = 0
 
-    for batch in val_batches:
-        image, label = batch
+    for data in val_batches:
+        image, label = data
         image, label = image.to(device), label.to(device)
 
         with torch.no_grad():
@@ -57,8 +62,9 @@ def evaluate(val_batches, epoch, model):
         return loss, accuracy
 
 
-def train_model(model, val_batches):
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+def train_model(model, val_batches, train_batches):
+    model = model.double()
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 
     total = 0
     total_correct = 0
@@ -68,10 +74,10 @@ def train_model(model, val_batches):
     best_accuracy = -1
     best_epoch = 0
 
-    for epoch in tqdm(range(epochs)):
+    for epoch in range(epochs):
         start = time.time()
 
-        for i, data in enumerate(train_loader):
+        for i, data in tqdm(enumerate(train_batches)):
             image, label = data
             image, label = image.to(device), label.to(device)
 
@@ -88,7 +94,7 @@ def train_model(model, val_batches):
             total_loss += loss.item() * image.size(0)
 
         time_per_epoch = time.time() - start
-        eval_loss, eval_accuracy = evaluate(val_batches, epoch, model)
+        eval_loss, eval_accuracy = evaluate(val_batches, model)
 
         model.train()
 
@@ -140,6 +146,31 @@ class CIFARDataset(Dataset):
             out_image = augmenter['image']
 
         out_label = self.yml_labels[image_name]
+        if out_label == 'airplane':
+            out_label = 1
+        elif out_label == 'automobile':
+            out_label = 2
+        elif out_label == 'bird':
+            out_label = 3
+        elif out_label == 'cat':
+            out_label = 4
+        elif out_label == 'deer':
+            out_label = 5
+        elif out_label == 'dog':
+            out_label = 6
+        elif out_label == 'frog':
+            out_label = 7
+        elif out_label == 'horse':
+            out_label = 8
+        elif out_label == 'ship':
+            out_label = 9
+        else:
+            out_label = 0
+
+        out_image = torch.from_numpy(out_image).permute(2, 0, 1)
+        out_image = out_image.double()
+        out_label = torch.tensor(out_label).long()
+
         return out_image, out_label
 
 
@@ -149,6 +180,7 @@ with open(yml_path, 'r') as f:
 if __name__ == '__main__':
     transform = A.Compose(
         transforms=[
+            A.Resize(height=224, width=224, p=1),
             A.Flip(p=0.5),
             A.RandomRotate90(p=1)
         ],
@@ -169,7 +201,10 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
-    train_model()
+    baseline_model = models.resnet34(pretrained=False)
+    baseline_model.to(device)
+
+    train_model(model=baseline_model, train_batches=train_loader, val_batches=val_loader)
     #
     # # for i in range(len(train_set)):
     # #     image, label = train_set.__getitem__(i)
