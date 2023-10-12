@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import yaml
 import albumentations as A
 from torch.utils.data import DataLoader
+from torchvision import models
+import torch.nn as nn
 
 """
 Change your paths here
@@ -18,6 +20,33 @@ train_image_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\c
 test_image_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\cifar10\test'
 batch_size = 32
 
+
+def eval(val_batches, epoch, model, criterion, device='cuda'):
+    model.eval()
+
+    total_correct = 0
+    total_loss = 0
+    total = 0
+
+    for batch in val_batches:
+        image, label = batch
+        image, label = image.to(device), label.to(device)
+
+        with torch.no_grad():
+            outputs = model(image)
+            loss = self.criterion(outputs, label)
+
+            total_loss += loss.item() * image.size(0)
+            total += image.size(0)
+            _, prediction = outputs.max(1)
+
+            total_correct += (label == prediction).sum()
+
+        loss = total_loss / total
+        accuracy = total_correct / total
+        print( f'Evaluate --- Epoch: {epoch}, Loss: {loss:6.8f}, Accuracy: {accuracy:6.8f}')
+
+        return loss, accuracy
 
 class CIFARDataset(Dataset):
     def __init__(self, csv_dir, yml_labels, image_dir, transform: A.Compose = None, train=True):
@@ -51,7 +80,6 @@ class CIFARDataset(Dataset):
             out_image = augmenter['image']
 
         out_label = self.yml_labels[image_name]
-        print(image_name)
         return out_image, out_label
 
 
@@ -86,17 +114,17 @@ if __name__ == '__main__':
     #     plt.imshow(image[0])
     #     plt.title(label[0])
     #     plt.show()
-
-    for i in range(len(train_set)):
-        image, label = train_set.__getitem__(i)
-        print(label)
-        # plt.imshow(image)
-        # plt.title(label)
-        # plt.show()
-
-    # for j in range(2):
-    #     for i in range(3):
-    #         image, label = test_val_set.__getitem__(i)
-    #         plt.imshow(image)
-    #         plt.title(label)
-    #         plt.show()
+    #
+    # # for i in range(len(train_set)):
+    # #     image, label = train_set.__getitem__(i)
+    # #     print(label)
+    # #     # plt.imshow(image)
+    # #     # plt.title(label)
+    # #     # plt.show()
+    # #
+    # # # for j in range(2):
+    # # #     for i in range(3):
+    # # #         image, label = test_val_set.__getitem__(i)
+    # # #         plt.imshow(image)
+    # # #         plt.title(label)
+    # # #         plt.show()
