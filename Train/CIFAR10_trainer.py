@@ -19,6 +19,7 @@ csv_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\TRAIN_VAL
 yml_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\TRAIN_VAL\train_labels.yml'
 train_image_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\cifar10\train'
 test_image_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\cifar10\test'
+save_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\Models\baseline.pth'
 batch_size = 32
 epochs = 25
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -51,13 +52,12 @@ def evaluate(val_batches, epoch, model):
 
         loss = total_loss / total
         accuracy = total_correct / total
-        print(f'Evaluate --- Epoch: {epoch}, Loss: {loss:6.8f}, Accuracy: {accuracy:6.8f}')
+        # print(f'Evaluate --- Epoch: {epoch}, Loss: {loss:6.8f}, Accuracy: {accuracy:6.8f}')
 
         return loss, accuracy
 
 
-def train_model(model):
-
+def train_model(model, val_batches):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 
     total = 0
@@ -77,10 +77,35 @@ def train_model(model):
 
             optimizer.zero_grad()
 
+            outputs = model(image)
+            loss = criterion(outputs, label)
+            loss.backward()
+            optimizer.step()
+            total += image.size(0)
+            _, predictions = outputs.max(1)
+            total_correct += (predictions == label).sum()
 
-            plt.imshow(image[0])
-            plt.title(label[0])
-            plt.show()
+            total_loss += loss.item() * image.size(0)
+
+        time_per_epoch = time.time() - start
+        eval_loss, eval_accuracy = evaluate(val_batches, epoch, model)
+
+        model.train()
+
+        train_total_loss = total_loss / total
+        train_accuracy = total_correct / total
+
+        print(f'--- Epoch time: {time_per_epoch / 60.0:6.8f} minutes ---\n'
+              f'Train Accuracy: {train_accuracy:6.8f} --- Train Loss: {train_total_loss:6.8f}\n'
+              f'Eval Accuracy: {eval_accuracy:6.8f} --- Eval Loss: {eval_loss:6.8f}')
+
+        if eval_accuracy > best_accuracy:
+            best_accuracy = eval_accuracy
+            best_epoch = epoch
+            torch.save(model, save_path)
+            best_loss = eval_loss if eval_loss <= best_loss else best_loss
+        print(f'Best Accuracy: {best_accuracy} --- Best Loss: {best_loss}\n'
+              f'Current Epoch: {epoch} --- Best Epoch: {best_epoch}')
 
 
 class CIFARDataset(Dataset):
