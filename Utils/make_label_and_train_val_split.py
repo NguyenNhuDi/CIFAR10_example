@@ -61,24 +61,25 @@ if __name__ == '__main__':
 
     kf = KFold(n_splits=folds, shuffle=True)
 
+    out_csvs = [{
+        'train': [],
+        'val': []
+    }
+        for i in range(folds)]
+
     for i in range(10):
         for j, (train_index, test_index) in enumerate(kf.split(classes[i])):
 
-            out_csv = {
-                'train': [],
-                'val': []
-            }
-
             for index in train_index:
-                out_csv['train'].append(classes[i][index])
+                out_csvs[j]['train'].append(classes[i][index])
 
             for index in test_index:
-                out_csv['val'].append(str(classes[i][index]).split('.')[0])
+                out_csvs[j]['val'].append(str(classes[i][index]).split('.')[0])
 
-            while len(out_csv['train']) != len(out_csv['val']):
-                out_csv['val'].append(None)
+            while len(out_csvs[j]['train']) != len(out_csvs[j]['val']):
+                out_csvs[j]['val'].append(None)
 
-            df = pd.DataFrame.from_dict(out_csv)
+            df = pd.DataFrame.from_dict(out_csvs[j])
             save_path = os.path.join(output_dir)
 
             try:
