@@ -10,6 +10,7 @@ import albumentations as A
 from torch.utils.data import DataLoader
 from torchvision import models
 import torch.nn as nn
+import time
 
 """
 Change your paths here
@@ -19,9 +20,15 @@ yml_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\TRAIN_VAL
 train_image_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\cifar10\train'
 test_image_path = r'C:\Users\coanh\Desktop\UNI\AIC\Classification Competetion\cifar10\test'
 batch_size = 32
+epochs = 25
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+criterion = nn.CrossEntropyLoss()
+momentum = 0.9
+learning_rate = 0.1
+weight_decay = 0.75
 
 
-def eval(val_batches, epoch, model, criterion, device='cuda'):
+def evaluate(val_batches, epoch, model):
     model.eval()
 
     total_correct = 0
@@ -44,9 +51,37 @@ def eval(val_batches, epoch, model, criterion, device='cuda'):
 
         loss = total_loss / total
         accuracy = total_correct / total
-        print( f'Evaluate --- Epoch: {epoch}, Loss: {loss:6.8f}, Accuracy: {accuracy:6.8f}')
+        print(f'Evaluate --- Epoch: {epoch}, Loss: {loss:6.8f}, Accuracy: {accuracy:6.8f}')
 
         return loss, accuracy
+
+
+def train_model(model):
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+
+    total = 0
+    total_correct = 0
+    total_loss = 0
+
+    best_loss = 10000
+    best_accuracy = -1
+    best_epoch = 0
+
+    for epoch in tqdm(range(epochs)):
+        start = time.time()
+
+        for i, data in enumerate(train_loader):
+            image, label = data
+            image, label = image.to(device), label.to(device)
+
+            optimizer.zero_grad()
+
+
+            plt.imshow(image[0])
+            plt.title(label[0])
+            plt.show()
+
 
 class CIFARDataset(Dataset):
     def __init__(self, csv_dir, yml_labels, image_dir, transform: A.Compose = None, train=True):
@@ -109,11 +144,7 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
-    # for i, data in enumerate(train_loader):
-    #     image, label = data
-    #     plt.imshow(image[0])
-    #     plt.title(label[0])
-    #     plt.show()
+    train_model()
     #
     # # for i in range(len(train_set)):
     # #     image, label = train_set.__getitem__(i)
