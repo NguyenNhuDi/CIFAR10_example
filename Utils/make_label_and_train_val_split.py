@@ -68,23 +68,25 @@ if __name__ == '__main__':
         for i in range(folds)]
 
     for i in range(10):
-        for j, (train_index, test_index) in enumerate(kf.split(classes[i])):
+        for j, (train_index, val_index) in enumerate(kf.split(classes[i])):
 
             for index in train_index:
                 out_csvs[j]['train'].append(classes[i][index])
 
-            for index in test_index:
+            for index in val_index:
                 out_csvs[j]['val'].append(str(classes[i][index]).split('.')[0])
 
-            while len(out_csvs[j]['train']) != len(out_csvs[j]['val']):
-                out_csvs[j]['val'].append(None)
 
-            df = pd.DataFrame.from_dict(out_csvs[j])
-            save_path = os.path.join(output_dir)
+    for i in range(folds):
+        while len(out_csvs[i]['train']) != len(out_csvs[i]['val']):
+            out_csvs[i]['val'].append(None)
 
-            try:
-                os.makedirs(save_path)
-            except FileExistsError:
-                pass
+        df = pd.DataFrame.from_dict(out_csvs[i])
+        save_path = os.path.join(output_dir)
 
-            df.to_csv(os.path.join(save_path, f'{j}.csv'), index=False)
+        try:
+            os.makedirs(save_path)
+        except FileExistsError:
+            pass
+
+        df.to_csv(os.path.join(save_path, f'{i}.csv'), index=False)
