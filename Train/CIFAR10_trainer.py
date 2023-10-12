@@ -13,8 +13,8 @@ import torch.nn as nn
 import time
 from tqdm import tqdm
 
-
 import warnings
+
 warnings.filterwarnings("ignore")
 
 """
@@ -32,6 +32,7 @@ criterion = nn.CrossEntropyLoss()
 momentum = 0.9
 learning_rate = 0.1
 weight_decay = 0.75
+num_workers = 8
 
 
 def evaluate(val_batches, model):
@@ -47,7 +48,7 @@ def evaluate(val_batches, model):
 
         with torch.no_grad():
             outputs = model(image)
-            loss = self.criterion(outputs, label)
+            loss = criterion(outputs, label)
 
             total_loss += loss.item() * image.size(0)
             total += image.size(0)
@@ -191,31 +192,18 @@ if __name__ == '__main__':
                              image_dir=train_image_path,
                              csv_dir=csv_path,
                              transform=transform,
-                             train=False)
+                             train=True)
 
     val_set = CIFARDataset(yml_labels=yml_label,
                            image_dir=train_image_path,
                            csv_dir=csv_path,
-                           transform=transform)
+                           transform=transform,
+                           train=False)
 
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
     baseline_model = models.resnet34(pretrained=False)
     baseline_model.to(device)
 
     train_model(model=baseline_model, train_batches=train_loader, val_batches=val_loader)
-    #
-    # # for i in range(len(train_set)):
-    # #     image, label = train_set.__getitem__(i)
-    # #     print(label)
-    # #     # plt.imshow(image)
-    # #     # plt.title(label)
-    # #     # plt.show()
-    # #
-    # # # for j in range(2):
-    # # #     for i in range(3):
-    # # #         image, label = test_val_set.__getitem__(i)
-    # # #         plt.imshow(image)
-    # # #         plt.title(label)
-    # # #         plt.show()
